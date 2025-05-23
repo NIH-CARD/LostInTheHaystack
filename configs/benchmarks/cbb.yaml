@@ -1,0 +1,23 @@
+name: cbb
+cache_dirs:
+  HF_HOME: "./.cache/.huggingface_cache"
+raw:
+  cbb_sql_path: "data/raw/cbb.csv"
+tasks:
+  path: "data/tasks/cbb_golds.jsonl"
+params:
+  n_tasks: 250
+  distractor_sizes: []
+  depths: [0.0, 0.25, 0.5, 0.75, 1.0]
+  agents: ["Agent_V", "Agent_N", "Agent_T", "Agent_G"]
+  metric: bioscore
+  size_map: 
+    sm_g: sm_g
+    md_g: md_g
+    lg_g: lg_g
+grading_llm:
+  provider: azureoai
+  model:    gpt-4o
+  gen_config:
+    max_tokens: 10
+    temperature: 0.0

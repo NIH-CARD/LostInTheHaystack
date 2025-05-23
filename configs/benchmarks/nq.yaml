@@ -1,0 +1,18 @@
+name: nq
+cache_dirs:
+  HF_HOME: "./.cache/.huggingface_cache"
+  IR_DATASETS_HOME: "./.cache/.ir_datasets_cache"
+  IR_DATASETS_TMP: "./.cache/.ir_datasets_tmp"
+raw:
+  helmet_path: "data/raw/helmet-nq-kilt-dev-1000-k1000.jsonl"
+tasks:
+  path: "data/tasks/nq_golds.jsonl"
+params:
+  n_tasks: 250
+  distractor_sizes: [200]
+  depths: [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
+  metric: subEM
+  size_map:
+    sm_g: gold_sentence
+    md_g: gold_paragraph
+    lg_g: gold_section

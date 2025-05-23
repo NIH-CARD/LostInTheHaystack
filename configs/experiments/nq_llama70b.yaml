@@ -1,0 +1,2 @@
+benchmark: ../benchmarks/nq.yaml
+model:     ../models/llama70b.yaml

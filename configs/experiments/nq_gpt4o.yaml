@@ -1,0 +1,2 @@
+benchmark: ../benchmarks/nq.yaml
+model:     ../models/gpt4o.yaml

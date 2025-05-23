@@ -1,0 +1,6 @@
+llm:
+  provider: azureai
+  model: Meta-Llama-3.1-405B-Instruct
+  gen_config:
+    max_tokens: 256
+    temperature: 0.0

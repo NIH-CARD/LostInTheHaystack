@@ -1,0 +1,6 @@
+llm:
+  provider: azureai
+  model: Llama-3.3-70B-Instruct
+  gen_config:
+    max_tokens: 256
+    temperature: 0.0

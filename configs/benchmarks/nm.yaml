@@ -1,0 +1,16 @@
+name: nm
+cache_dirs:
+  HF_HOME: "./.cache/.huggingface_cache"
+raw:
+  path: ""
+tasks:
+  path: "data/tasks/nm_golds.jsonl"
+params:
+  n_tasks: 250
+  distractor_sizes: [5] #, 10, 15] for varying depth experiments on Gemini-2.0-Flash
+  depths: [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
+  metric: math-verify
+  size_map: 
+    sm_g: sm_g
+    md_g: md_g
+    lg_g: lg_g

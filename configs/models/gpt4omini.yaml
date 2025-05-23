@@ -1,0 +1,6 @@
+llm:
+  provider: azureoai
+  model:    gpt-4o-mini
+  gen_config:
+    max_tokens: 256
+    temperature: 0.0

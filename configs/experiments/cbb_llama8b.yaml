@@ -1,0 +1,2 @@
+benchmark: ../benchmarks/cbb.yaml
+model:     ../models/llama8b.yaml

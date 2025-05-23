@@ -1,0 +1,10 @@
+llm:
+  provider: huggingface
+  model:    llama8b
+  client_params:
+    model_name: meta-llama/Llama-3.1-8B-Instruct
+    device_map: auto
+
+  gen_config:
+    max_tokens: 256
+    temperature: 0.0

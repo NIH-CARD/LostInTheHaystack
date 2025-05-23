@@ -1,0 +1,2 @@
+benchmark: ../benchmarks/nm.yaml
+model:     ../models/gemini2flash.yaml

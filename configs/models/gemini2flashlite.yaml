@@ -1,0 +1,6 @@
+llm:
+  provider: google
+  model:    gemini-2.0-flash-lite
+  gen_config:
+    max_tokens: 256
+    temperature: 0.0
