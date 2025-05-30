@@ -142,6 +142,24 @@ To add a new LLM:
 1. Create a new YAML config file under `configs/models/`.
 2. Extend the `base_llm.py` abstract class in `scripts/models/`.
 
+--- 
+
+# Relevant citation: 
+```
+@article{bianchi2025SmallerNeedles,
+	title        = {Lost in the Haystack: Smaller Needles are More Difficult for LLMs to Find},
+	author       = {Owen Bianchi and Mathew J. Koretsky and Maya Willey and Chelsea X. Alvarado and Tanay Nayak and Adi Asija and Nicole Kuznetsov and Mike A. Nalls and Faraz Faghri and Daniel Khashabi},
+	year         = 2025,
+	journal      = {arXiv preprint arXiv:2505.18148},
+	volume       = {abs/2505.18148},
+	url          = {https://arxiv.org/abs/2505.18148},
+	eprint       = {2505.18148},
+	archiveprefix = {arXiv},
+	primaryclass = {cs.CL},
+	code         = {https://github.com/NIH-CARD/LostInTheHaystack},
+}
+```
+
 ---
 
 **Enjoy exploring how LLMs handle varying gold context sizes!**
