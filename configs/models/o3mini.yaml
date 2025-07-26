@@ -1,0 +1,5 @@
+llm:
+  provider: azureoai
+  model: o3-mini
+  gen_config:
+    max_tokens: 2048

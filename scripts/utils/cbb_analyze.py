@@ -74,6 +74,7 @@ def load_single_model_to_df(
                 f"{s}@{d}_{metric}": record[f"{s}@{d}"][metric]
                 for s in gold_sizes for d in depths
             },
+            "answer": record.get("lg_g@0.0"),
         }
         rows.append(row)
     return pd.DataFrame(rows)
@@ -223,6 +224,7 @@ def run_benchmark_analysis(bench_config: dict) -> None:
     metric_label = "Quality Rate"
 
     df_all = load_all_models_to_df(Path("data/results") / bench_name, bench_name, metric, gold_sizes, depths, agents)
+    df_all.to_csv("hi.csv", index=False)
 
     summary_df = build_quality_table_df(df_all, metric, gold_sizes, depths)
     save_table_as_png(summary_df, f"{bench_name}_depth_stats", output_dir)

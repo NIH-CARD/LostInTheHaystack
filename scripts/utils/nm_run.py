@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Tuple
 import tiktoken
 
 from scripts.utils.metrics import math_verify_score
-from scripts.utils.utils import count_tokens_tiktoken, load_jsonl, print_
+from scripts.utils.utils import count_tokens_tiktoken, load_jsonl, print_, split_thinking_blocks
 
 
 def load_tasks(path: Path) -> List[Dict[str, Any]]:
@@ -116,17 +116,20 @@ def aggregate(
 
     for attempt in range(3):
         try:
-            answer = llm.generate(prompt, gen_config)
+            raw_out = llm.generate(prompt, gen_config)
             break
         except Exception as e:
             print(f"API call failed (attempt {attempt + 1}): {e}")
             time.sleep((attempt + 1) * 3)
     else:
         print("LLM.generate failed 3 times")
-        answer = ""
+        raw_out = ""
+
+    answer, reasoning = split_thinking_blocks(raw_out)
 
     mv_score = math_verify_score(answer, gold_answer)
-    return {"answer": answer, "math-verify": mv_score}
+
+    return {"answer": answer, "reasoning": reasoning, "math-verify": mv_score}
 
 
 def run_experiments_for_task(

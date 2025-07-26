@@ -1,0 +1,6 @@
+llm:
+  provider: azureai
+  model: DeepSeek-R1-0528
+  gen_config:
+    max_tokens: 2048
+    temperature: 0.6

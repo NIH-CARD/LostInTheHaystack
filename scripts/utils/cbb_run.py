@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
 from scripts.utils.metrics import grade_bioscore
-from scripts.utils.utils import count_tokens_tiktoken, load_jsonl, print_
+from scripts.utils.utils import count_tokens_tiktoken, load_jsonl, print_, split_thinking_blocks
 
 # Agent names used for distractor documents
 AGENTS = ["Agent_V", "Agent_N", "Agent_T", "Agent_G"]
@@ -105,17 +105,20 @@ def aggregate(
 
     for attempt in range(3):
         try:
-            answer = llm.generate(prompt, gen_config)
+            raw_out = llm.generate(prompt, gen_config)
             break
         except Exception as e:
             print(f"API call failed (attempt {attempt + 1}): {e}")
             time.sleep((attempt + 1) * 3)
     else:
         print("LLM.generate failed 3 times")
-        answer = ""
+        raw_out = ""
+
+    answer, reasoning = split_thinking_blocks(raw_out)
 
     bioscore = grade_bioscore(question, gold_answer, answer, grading_llm, grading_gen_config)
-    return {"answer": answer, "bioscore": bioscore}
+    
+    return {"answer": answer, "reasoning": reasoning, "bioscore": bioscore}
 
 
 def run_experiments_for_task(

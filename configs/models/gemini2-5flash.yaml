@@ -1,0 +1,6 @@
+llm:
+  provider: google
+  model: gemini-2.5-flash
+  gen_config:
+    thinking_budget: 1024
+    max_tokens: 2048

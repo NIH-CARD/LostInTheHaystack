@@ -2,6 +2,7 @@ import gzip
 import json
 import shutil
 from pathlib import Path
+import re
 from typing import Any, Dict, List, Set, Union
 
 import tiktoken
@@ -103,3 +104,20 @@ def append_result(result: Dict[str, Any], results_file: Union[str, Path]) -> Non
             print_(f"Warning: could not read existing results: {e}")
     results.append(result)
     results_file.write_text(json.dumps(results, indent=4), encoding="utf-8")
+
+
+_THINK_RE = re.compile(r'<\s*think[^>]*>(.*?)<\/\s*think\s*>', re.I | re.S)
+
+
+def split_thinking_blocks(text: str) -> tuple[str, str]:
+    """
+    Return (answer_without_thinking, reasoning).
+    """
+    try:
+        reasoning_parts = _THINK_RE.findall(text)
+        reasoning = "\n\n".join(part.strip() for part in reasoning_parts)
+        answer = _THINK_RE.sub('', text).strip()
+        return answer, reasoning
+    except Exception as e:
+        print(f"Failed to parse thinking from answer: {e}")
+        return text, ""

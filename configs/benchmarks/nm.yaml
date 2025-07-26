@@ -6,7 +6,7 @@ raw:
 tasks:
   path: "data/tasks/nm_golds.jsonl"
 params:
-  n_tasks: 250
+  n_tasks: 125 #250
   distractor_sizes: [5] #, 10, 15] for varying depth experiments on Gemini-2.0-Flash
   depths: [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
   metric: math-verify

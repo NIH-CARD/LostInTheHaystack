@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name=gpt4oturbo
+#SBATCH --job-name=gemini2-5_flash
 #SBATCH --mem=25g
 #SBATCH --time=48:00:00
 #SBATCH --partition=norm
@@ -14,6 +14,6 @@ conda deactivate || true
 conda activate streaming-env
 
 # Run your script
-python -m scripts.run --exp-config configs/experiments/cbb_gpt4oturbo.yaml
-python -m scripts.run --exp-config configs/experiments/nm_gpt4oturbo.yaml
-python -m scripts.run --exp-config configs/experiments/nq_gpt4oturbo.yaml
+python -m scripts.run --exp-config configs/experiments/cbb_gemini2-5flash.yaml
+python -m scripts.run --exp-config configs/experiments/nm_gemini2-5flash.yaml
+python -m scripts.run --exp-config configs/experiments/nq_gemini2-5flash.yaml

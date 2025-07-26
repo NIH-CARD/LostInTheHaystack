@@ -33,27 +33,36 @@ class GoogleGenerationConfig(BaseGenerationConfig):
     Contains and validates data needed to generate text from the genai client.
     """
     provider: str = "google"
-    model: Literal["gemini-2.0-flash", "gemini-2.0-flash-lite"]
+    model: Literal["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite"]
     tools: List[dict] = []
+    thinking_budget: int = -1
 
     def to_genai_config(self) -> genai.types.GenerateContentConfig:
         """
         Returns a genai.types.GenerateContentConfig to be passed to the genai.(aio.)generate_content() method.
         Hardcodes all safety_settings to be "OFF" and response_modality to be "TEXT".
         """
-        generate_content_config = genai.types.GenerateContentConfig(
-            temperature = self.temperature,
-            max_output_tokens = self.max_tokens,
-            response_modalities = ["TEXT"],
-            safety_settings = [
+        config_kwargs = {
+            "max_output_tokens": self.max_tokens,
+            "response_modalities": ["TEXT"],
+            "safety_settings": [
                 genai.types.SafetySetting(category="HARM_CATEGORY_HATE_SPEECH", threshold="OFF"),
                 genai.types.SafetySetting(category="HARM_CATEGORY_DANGEROUS_CONTENT", threshold="OFF"),
                 genai.types.SafetySetting(category="HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold="OFF"),
-                genai.types.SafetySetting(category="HARM_CATEGORY_HARASSMENT",threshold="OFF")
+                genai.types.SafetySetting(category="HARM_CATEGORY_HARASSMENT", threshold="OFF")
             ],
-            tools=[genai.types.Tool(function_declarations=[genai.types.FunctionDeclaration(**tool) for tool in self.tools])] if self.tools else []
-        )
-        return generate_content_config
+            "thinking_config": genai.types.ThinkingConfig(thinking_budget=self.thinking_budget) if self.thinking_budget >= 0 else None
+        }
+
+        if self.model != "gemini-2.5-flash":
+            config_kwargs["temperature"] = self.temperature
+
+        if self.tools:
+            config_kwargs["tools"] = [
+                genai.types.Tool(function_declarations=[genai.types.FunctionDeclaration(**tool) for tool in self.tools])
+            ]
+
+        return genai.types.GenerateContentConfig(**config_kwargs)
 
 class GoogleLLM(BaseLLM):
     """
@@ -91,7 +100,7 @@ class GoogleLLM(BaseLLM):
             contents=prompt,
             config=gen_cfg
         )
-
+        print(response)
         return response.candidates[0].content.parts[0].text
     
     async def generate_async(self, prompt: str, config: GoogleGenerationConfig) -> str:

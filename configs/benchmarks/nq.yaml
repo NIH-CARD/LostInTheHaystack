@@ -8,7 +8,7 @@ raw:
 tasks:
   path: "data/tasks/nq_golds.jsonl"
 params:
-  n_tasks: 250
+  n_tasks: 125 #250
   distractor_sizes: [200]
   depths: [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
   metric: subEM

@@ -2,7 +2,7 @@
 
 #SBATCH --job-name=gemini2_flashlite
 #SBATCH --mem=25g
-#SBATCH --time=24:00:00
+#SBATCH --time=48:00:00
 #SBATCH --partition=norm
 #SBATCH --cpus-per-task=2
 #SBATCH --output=logs/%x_%j.out
@@ -14,6 +14,6 @@ conda deactivate || true
 conda activate streaming-env
 
 # Run your script
-# python -m scripts.run --exp-config configs/experiments/cbb_gemini2flashlite.yaml
-python -m scripts.run --exp-config configs/experiments/or1m_gemini2flashlite.yaml
-# python -m scripts.run --exp-config configs/experiments/nqkilt_gemini2flashlite.yaml
+python -m scripts.run --exp-config configs/experiments/cbb_gemini2flashlite.yaml
+python -m scripts.run --exp-config configs/experiments/nm_gemini2flashlite.yaml
+python -m scripts.run --exp-config configs/experiments/nq_gemini2flashlite.yaml
