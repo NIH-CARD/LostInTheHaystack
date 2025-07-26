@@ -18,15 +18,22 @@ from scripts.utils.graph_utils import (
 from scripts.utils.utils import print_
 
 
-NAME_MAPPING = {
+BASELINE_MODELS = {
     "gpt-4o": "GPT-4o",
     "gpt-4o-mini": "GPT-4o-Mini",
     "gemini-2.0-flash": "Gemini-2.0-Flash",
     "gemini-2.0-flash-lite": "Gemini-2.0-Flash-Lite",
     "Meta-Llama-3.1-405B-Instruct": "LLaMA-3.1-405b",
     "Llama-3.3-70B-Instruct": "LLaMA-3.3-70b",
-    "llama8b": "LLaMA-3.1-8b"
+    "llama8b": "LLaMA-3.1-8b",
 }
+REASONING_MODELS = {
+    "gemini-2.5-flash": "Gemini-2.5-Flash",
+    "o3-mini": "o3-mini",
+    "DeepSeek-R1-0528": "DeepSeek-R1",
+    "Phi-4-reasoning": "Phi-4-reasoning",
+}
+COMBINED_MODELS = BASELINE_MODELS | REASONING_MODELS
 
 
 def compute_quality(vals: pd.Series, confidence: float = 0.90, n_resamples: int = 10_000) -> tuple[float, float]:
@@ -55,7 +62,7 @@ def compute_quality(vals: pd.Series, confidence: float = 0.90, n_resamples: int 
 
 
 def load_single_model_to_df(
-    filepath: Path, metric: str, gold_sizes: List[str], depths: List[float], agents: List[str]
+    filepath: Path, metric: str, gold_sizes: List[str], depths: List[float], agents: List[str], 
 ) -> pd.DataFrame:
     """
     Load model result JSON into a dataframe.
@@ -64,6 +71,7 @@ def load_single_model_to_df(
     rows = []
     for record in data:
         row = {
+            "task_id": record.get("task_id", -1),
             **record.get("gold_ctxs_meta", {}),
             **record.get("distractor_ctxs_meta", {}),
             f"no_ctx_{metric}": record["no_ctx"][metric],
@@ -81,7 +89,7 @@ def load_single_model_to_df(
 
 
 def load_all_models_to_df(
-    results_root: Path, bench_name: str, metric: str, gold_sizes: List[str], depths: List[float], agents: List[str]
+    results_root: Path, bench_name: str, metric: str, gold_sizes: List[str], depths: List[float], agents: List[str], name_mapping: Dict[str, str] = COMBINED_MODELS
 ) -> pd.DataFrame:
     """
     Load results from all models into a single dataframe.
@@ -92,13 +100,13 @@ def load_all_models_to_df(
         df = load_single_model_to_df(
             model_dir / f"{bench_name}_{model_key}_results.json", metric, gold_sizes, depths, agents
         )
-        df.insert(0, "model", NAME_MAPPING.get(model_key, model_key))
+        df.insert(0, "model", name_mapping.get(model_key, model_key))
         frames.append(df)
     return pd.concat(frames, ignore_index=True)
 
 
 def build_quality_table_df(
-    df_all: pd.DataFrame, metric: str, gold_sizes: List[str], depths: List[float], compute_fn=compute_quality, precision: int = 2
+    df_all: pd.DataFrame, metric: str, gold_sizes: List[str], depths: List[float], compute_fn=compute_quality, precision: int = 2, name_mapping: Dict[str, str] = COMBINED_MODELS
 ) -> pd.DataFrame:
     """
     Build a summary table of quality scores per model, size, and depth.
@@ -131,12 +139,12 @@ def build_quality_table_df(
 
     df = pd.DataFrame.from_dict(rows, orient="index", columns=cols)
     return df.reindex([
-        f"{NAME_MAPPING[m]}_{s}" for m in NAME_MAPPING for s in gold_sizes if f"{NAME_MAPPING[m]}_{s}" in df.index
+        f"{name_mapping[m]}_{s}" for m in name_mapping for s in gold_sizes if f"{name_mapping[m]}_{s}" in df.index
     ])
 
 
 def build_baseline_table_df(
-    df_all: pd.DataFrame, metric: str, gold_sizes: List[str], compute_fn=compute_quality, precision: int = 2
+    df_all: pd.DataFrame, metric: str, gold_sizes: List[str], compute_fn=compute_quality, precision: int = 2, name_mapping: Dict[str, str] = COMBINED_MODELS
 ) -> pd.DataFrame:
     """
     Build baseline quality scores for distractor, no-context, and gold-only conditions.
@@ -151,11 +159,11 @@ def build_baseline_table_df(
         rows[model] = cells
 
     df = pd.DataFrame.from_dict(rows, orient="index", columns=cols)
-    return df.reindex([NAME_MAPPING[m] for m in NAME_MAPPING if NAME_MAPPING[m] in df.index])
+    return df.reindex([name_mapping[m] for m in name_mapping if name_mapping[m] in df.index])
 
 
 def build_bench_metrics_dict(
-    df_all: pd.DataFrame, metric: str, gold_sizes: List[str], depths: List[float], compute_fn=compute_quality
+    df_all: pd.DataFrame, metric: str, gold_sizes: List[str], depths: List[float], compute_fn=compute_quality, name_mapping: Dict[str, str] = COMBINED_MODELS
 ) -> Dict[str, Dict[str, Tuple[float, float]]]:
     """
     Construct metrics dictionary: model -> gold size -> (mean, CI)
@@ -172,7 +180,7 @@ def build_bench_metrics_dict(
         bench_metrics[model] = size_stats
 
     ordered = {}
-    for raw_name, display_name in NAME_MAPPING.items():
+    for raw_name, display_name in name_mapping.items():
         if display_name in bench_metrics:
             ordered[display_name] = bench_metrics[display_name]
     return ordered
@@ -224,7 +232,7 @@ def run_benchmark_analysis(bench_config: dict) -> None:
     metric_label = "Quality Rate"
 
     df_all = load_all_models_to_df(Path("data/results") / bench_name, bench_name, metric, gold_sizes, depths, agents)
-    df_all.to_csv("hi.csv", index=False)
+    df_all.to_csv("data/analysis/all_results/cbb_all_results.csv", index=False)
 
     summary_df = build_quality_table_df(df_all, metric, gold_sizes, depths)
     save_table_as_png(summary_df, f"{bench_name}_depth_stats", output_dir)
@@ -238,8 +246,12 @@ def run_benchmark_analysis(bench_config: dict) -> None:
     plot_bar(bench_metrics, bench_name, metric_label, output_dir)
     plot_range_scatter(summary_df, bench_name, gold_sizes, output_dir, metric_label)
     plot_token_count_distribution(df_all, gold_sizes, output_dir, bench_name, "token_count", f"{bench_name} Token Count Distribution")
-    plot_spaghetti_gold_by_model(summary_df, bench_name, ["sm_g", "lg_g"], depths, output_dir, metric_label)
-    plot_spaghetti_gold_by_model(summary_df, bench_name, ["sm_g"], depths[:], output_dir, metric_label)
-    plot_spaghetti_gold_by_model(summary_df, bench_name, ["lg_g"], depths[:], output_dir, metric_label)
+
+    baseline_mask = df_all["model"].isin(BASELINE_MODELS.values())
+    df_baseline = df_all[baseline_mask]
+    baseline_summary = build_quality_table_df(df_baseline, metric, gold_sizes, depths, name_mapping=BASELINE_MODELS)
+    plot_spaghetti_gold_by_model(baseline_summary, bench_name, ["sm_g", "lg_g"], depths, output_dir, metric_label)
+    plot_spaghetti_gold_by_model(baseline_summary, bench_name, ["sm_g"], depths[:], output_dir, metric_label)
+    plot_spaghetti_gold_by_model(baseline_summary, bench_name, ["lg_g"], depths[:], output_dir, metric_label)
 
     print_(f"Benchmark-wide analysis complete for {bench_name} --> {output_dir}", fun="{+}")

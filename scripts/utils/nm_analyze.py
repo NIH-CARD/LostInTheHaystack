@@ -38,6 +38,7 @@ def load_single_model_to_df(
     rows = []
     for record in data:
         row = {
+            "task_id": record.get("task_id", -1),
             **record.get("gold_ctxs_meta", {}),
             **record.get("distractor_ctxs_meta", {}),
             f"no_ctx_{metric}": record["no_ctx"][metric],
@@ -176,6 +177,7 @@ def run_benchmark_analysis(bench_config: dict) -> None:
     distractor_sizes = params["distractor_sizes"][:1]
 
     all_results = load_all_models_to_df(results_root, bench_name, metric, size_map, depths, distractor_sizes)
+    all_results.to_csv("data/analysis/all_results/nm_all_results.csv", index=False)
 
     stats_df = build_stats_table_df(all_results, metric, size_map, depths)
     save_table_as_png(stats_df, f"{bench_name}_depth_stats", output_dir)
