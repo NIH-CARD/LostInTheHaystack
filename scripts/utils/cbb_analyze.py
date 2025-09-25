@@ -82,7 +82,6 @@ def load_single_model_to_df(
                 f"{s}@{d}_{metric}": record[f"{s}@{d}"][metric]
                 for s in gold_sizes for d in depths
             },
-            "answer": record.get("lg_g@0.0"),
         }
         rows.append(row)
     return pd.DataFrame(rows)
@@ -210,7 +209,7 @@ def run_model_analysis(model_config: dict, bench_config: dict) -> None:
     plot_line_by_pos(
         data=df, metric=metric, compute_fn=compute_quality, gold_sizes=sizes, depths=depths,
         title=title, save_path=str(output_dir), metric_label=metric_label,
-        show_legend=(model_id == "gemini-2.0-flash"), show_xaxis=(model_id == "Llama-3.3-70B-Instruct")
+        show_legend=(model_id in ["gemini-2.0-flash", "DeepSeek-R1-0528"]), show_xaxis=(model_id in ["Llama-3.3-70B-Instruct", "Phi-4-reasoning"])
     )
 
     print_(f"{bench_name} analysis complete on {model_id} --> {output_dir}", fun="{+}")

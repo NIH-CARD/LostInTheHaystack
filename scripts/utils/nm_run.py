@@ -81,7 +81,7 @@ def format_docs(docs: List[Dict[str, Any]]) -> str:
     )
 
 
-def format_prompt(question: str, docs: List[str]) -> str:
+def format_prompt(question: str, docs: List[str], model: str) -> str:
     """
     Format a prompt that includes distractor contexts.
     """
@@ -90,7 +90,14 @@ def format_prompt(question: str, docs: List[str]) -> str:
         "Write nothing but your final answer in LaTeX within \\boxed{}. "
         "If you do not know the answer to a question, explicitly state so in \\boxed{I don't know}. "
     )
-    prompt_lines = [f"QUESTION: {question}", "DOCUMENTS:"] + docs + [f"QUESTION: {question}", "ANSWER:"]
+
+    reasoning_models_extra_instructions = (
+        "Try your absolute hardest to retrieve the answer from the documents, do not solve by hand. "
+        if model in {"o3-mini", "gemini-2.5-flash", "DeepSeek-R1-0528", "Phi-4-reasoning"}
+        else ""
+    )
+
+    prompt_lines = [f"QUESTION: {question}", "DOCUMENTS:"] + docs + [reasoning_models_extra_instructions, f"QUESTION: {question}", "ANSWER:"]
     return prefix + "\n" + "\n".join(prompt_lines)
 
 
@@ -112,7 +119,8 @@ def aggregate(
     """
     Generate an answer with the LLM and score it using math_verify.
     """
-    prompt = format_prompt_noctx(question) if len(docs) == 0 else format_prompt(question, docs)
+    model = gen_config.model
+    prompt = format_prompt_noctx(question) if len(docs) == 0 else format_prompt(question, docs, model)
 
     for attempt in range(3):
         try:

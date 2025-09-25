@@ -37,8 +37,8 @@ def prep_cbb(cfg):
         for key in ["general_query", "refined_query"]:
             rec_dict.pop(key, None)
         rows.append(rec_dict)
-        if len(rows) == cfg["params"]["n_tasks"]:
-            break
+        #if len(rows) == cfg["params"]["n_tasks"]:
+            #break
 
     with open(output_path, "w") as f:
         for r in rows:

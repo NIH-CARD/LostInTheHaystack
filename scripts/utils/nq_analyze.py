@@ -17,7 +17,8 @@ from scripts.utils.graph_utils import (
 )
 from scripts.utils.utils import print_
 
-NAME_MAPPING = {
+
+BASELINE_MODELS = {
     "gpt-4o": "GPT-4o",
     "gpt-4o-mini": "GPT-4o-Mini",
     "gemini-2.0-flash": "Gemini-2.0-Flash",
@@ -26,6 +27,13 @@ NAME_MAPPING = {
     "Llama-3.3-70B-Instruct": "LLaMA-3.3-70b",
     "llama8b": "LLaMA-3.1-8b"
 }
+REASONING_MODELS = {
+    "gemini-2.5-flash": "Gemini-2.5-Flash",
+    "o3-mini": "o3-mini",
+    "DeepSeek-R1-0528": "DeepSeek-R1",
+    "Phi-4-reasoning": "Phi-4-reasoning",
+}
+COMBINED_MODELS = BASELINE_MODELS | REASONING_MODELS
 
 
 def load_single_model_to_df(
@@ -54,7 +62,7 @@ def load_single_model_to_df(
 
 
 def load_all_models_to_df(
-    results_root: Path, bench_name: str, metric: str, size_map: Dict[str, str], depths: List[float], distractor_sizes: List[int]
+    results_root: Path, bench_name: str, metric: str, size_map: Dict[str, str], depths: List[float], distractor_sizes: List[int], name_mapping: Dict[str, str] = COMBINED_MODELS
 ) -> pd.DataFrame:
     """
     Load results from all models into a single dataframe.
@@ -65,13 +73,13 @@ def load_all_models_to_df(
         df = load_single_model_to_df(
             model_dir / f"{bench_name}_{model_key}_results.json", metric, size_map, depths, distractor_sizes
         )
-        df.insert(0, "model", NAME_MAPPING.get(model_key, model_key))
+        df.insert(0, "model", name_mapping.get(model_key, model_key))
         frames.append(df)
     return pd.concat(frames, ignore_index=True)
 
 
 def build_stats_table_df(
-    all_results: pd.DataFrame, metric: str, size_map: Dict[str, str], depths: List[float], compute_fn=boot_mean_ci, precision: int = 2
+    all_results: pd.DataFrame, metric: str, size_map: Dict[str, str], depths: List[float], compute_fn=boot_mean_ci, precision: int = 2, name_mapping: Dict[str, str] = COMBINED_MODELS
 ) -> pd.DataFrame:
     """
     Build a summary table of subEM scores per model, size, and depth.
@@ -91,11 +99,11 @@ def build_stats_table_df(
             values += [f"{avg:.{precision}f}±{avg_ci:.{precision}f}", f"{rng:.{precision}f}", f"{base_mean:.{precision}f}±{base_ci:.{precision}f}"]
             rows[f"{model}_{s}"] = values
     df = pd.DataFrame.from_dict(rows, orient="index", columns=cols)
-    return df.reindex([f"{NAME_MAPPING[m]}_{s}" for m in NAME_MAPPING for s in size_map if f"{NAME_MAPPING[m]}_{s}" in df.index])
+    return df.reindex([f"{name_mapping[m]}_{s}" for m in name_mapping for s in size_map if f"{name_mapping[m]}_{s}" in df.index])
 
 
 def build_baseline_table_df(
-    all_results: pd.DataFrame, metric: str, size_map: Dict[str, str], distractor_sizes: List[int], compute_fn=boot_mean_ci, precision: int = 2
+    all_results: pd.DataFrame, metric: str, size_map: Dict[str, str], distractor_sizes: List[int], compute_fn=boot_mean_ci, precision: int = 2, name_mapping: Dict[str, str] = COMBINED_MODELS
 ) -> pd.DataFrame:
     """
     Build baseline subEM scores for distractor, no-context, and gold-only conditions.
@@ -108,11 +116,12 @@ def build_baseline_table_df(
             mean, ci = compute_fn(gdf[f"{col}_{metric}"])
             cells.append(f"{mean:.{precision}f}±{ci:.{precision}f}")
         rows[model] = cells
-    return pd.DataFrame.from_dict(rows, orient="index", columns=cols)
+    df = pd.DataFrame.from_dict(rows, orient="index", columns=cols)
+    return df.reindex([name_mapping[m] for m in name_mapping if name_mapping[m] in df.index])
 
 
 def build_bench_metrics_dict(
-    all_results: pd.DataFrame, metric: str, size_map: Dict[str, str], depths: List[float], compute_fn=boot_mean_ci
+    all_results: pd.DataFrame, metric: str, size_map: Dict[str, str], depths: List[float], compute_fn=boot_mean_ci, name_mapping: Dict[str, str] = COMBINED_MODELS
 ) -> Dict[str, Dict[str, Tuple[float, float]]]:
     """
     Construct metrics dictionary: model -> gold size -> (mean, CI)
@@ -126,7 +135,7 @@ def build_bench_metrics_dict(
         }
         bench_metrics[model] = stats
     ordered = {}
-    for raw_name, display_name in NAME_MAPPING.items():
+    for raw_name, display_name in name_mapping.items():
         if display_name in bench_metrics:
             ordered[display_name] = bench_metrics[display_name]
     return ordered
@@ -180,6 +189,7 @@ def run_benchmark_analysis(bench_config: dict) -> None:
     all_results.to_csv("data/analysis/all_results/nq_all_results.csv", index=False)
 
     stats_df = build_stats_table_df(all_results, metric, size_map, depths)
+    stats_df.to_csv("hi.csv")
     save_table_as_png(stats_df, f"{bench_name}_depth_stats", output_dir)
     plot_heatmap(stats_df, list(size_map), bench_name, output_dir, metric, vmin=0.1, vmax=1.0, baseline=False)
 
@@ -193,10 +203,14 @@ def run_benchmark_analysis(bench_config: dict) -> None:
     TOKEN_COL_RENAME = {
         "gold_sentence_tokens":  "sm_g_token_count",
         "gold_paragraph_tokens": "md_g_token_count",
-        "gold_article_tokens":   "lg_g_token_count",
+        "gold_section_tokens":   "lg_g_token_count",
     }
     all_results.rename(columns=TOKEN_COL_RENAME, inplace=True)
     plot_token_count_distribution(all_results, list(size_map), output_dir, bench_name, "token_count", f"{bench_name} Token Count Distribution")
-    plot_spaghetti_gold_by_model(stats_df, bench_name, ["sm_g", "lg_g"], depths, output_dir, metric)
+    
+    baseline_mask = all_results["model"].isin(BASELINE_MODELS.values())
+    df_baseline = all_results[baseline_mask]
+    baseline_model_stats_df = build_stats_table_df(df_baseline, metric, size_map, depths, name_mapping=BASELINE_MODELS)
+    plot_spaghetti_gold_by_model(baseline_model_stats_df, bench_name, ["sm_g", "lg_g"], depths, output_dir, metric)
 
     print_(f"Benchmark-wide analysis complete for {bench_name} --> {output_dir}", "{+}")
