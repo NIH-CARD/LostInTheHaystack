@@ -15,6 +15,6 @@ conda deactivate || true
 conda activate streaming-env
 
 # Run your script
-# python -m scripts.run --exp-config configs/experiments/cbb_llama8b.yaml
-python -m scripts.run --exp-config configs/experiments/or1m_llama8b.yaml
-# python -m scripts.run --exp-config configs/experiments/nqkilt_llama8b.yaml
+python -m scripts.run --exp-config configs/experiments/cbb_llama8b.yaml
+python -m scripts.run --exp-config configs/experiments/nm_llama8b.yaml
+python -m scripts.run --exp-config configs/experiments/nq_llama8b.yaml

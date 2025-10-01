@@ -1,0 +1,6 @@
+llm:
+  provider: azureai
+  model: Phi-4-reasoning
+  gen_config:
+    max_tokens: 2048
+    temperature: 0.8

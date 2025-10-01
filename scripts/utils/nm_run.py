@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Tuple
 import tiktoken
 
 from scripts.utils.metrics import math_verify_score
-from scripts.utils.utils import count_tokens_tiktoken, load_jsonl, print_
+from scripts.utils.utils import count_tokens_tiktoken, load_jsonl, print_, split_thinking_blocks
 
 
 def load_tasks(path: Path) -> List[Dict[str, Any]]:
@@ -81,7 +81,7 @@ def format_docs(docs: List[Dict[str, Any]]) -> str:
     )
 
 
-def format_prompt(question: str, docs: List[str]) -> str:
+def format_prompt(question: str, docs: List[str], model: str) -> str:
     """
     Format a prompt that includes distractor contexts.
     """
@@ -90,7 +90,14 @@ def format_prompt(question: str, docs: List[str]) -> str:
         "Write nothing but your final answer in LaTeX within \\boxed{}. "
         "If you do not know the answer to a question, explicitly state so in \\boxed{I don't know}. "
     )
-    prompt_lines = [f"QUESTION: {question}", "DOCUMENTS:"] + docs + [f"QUESTION: {question}", "ANSWER:"]
+
+    reasoning_models_extra_instructions = (
+        "Try your absolute hardest to retrieve the answer from the documents, do not solve by hand. "
+        if model in {"o3-mini", "gemini-2.5-flash", "DeepSeek-R1-0528", "Phi-4-reasoning"}
+        else ""
+    )
+
+    prompt_lines = [f"QUESTION: {question}", "DOCUMENTS:"] + docs + [reasoning_models_extra_instructions, f"QUESTION: {question}", "ANSWER:"]
     return prefix + "\n" + "\n".join(prompt_lines)
 
 
@@ -112,21 +119,25 @@ def aggregate(
     """
     Generate an answer with the LLM and score it using math_verify.
     """
-    prompt = format_prompt_noctx(question) if len(docs) == 0 else format_prompt(question, docs)
+    model = gen_config.model
+    prompt = format_prompt_noctx(question) if len(docs) == 0 else format_prompt(question, docs, model)
 
     for attempt in range(3):
         try:
-            answer = llm.generate(prompt, gen_config)
+            raw_out = llm.generate(prompt, gen_config)
             break
         except Exception as e:
             print(f"API call failed (attempt {attempt + 1}): {e}")
             time.sleep((attempt + 1) * 3)
     else:
         print("LLM.generate failed 3 times")
-        answer = ""
+        raw_out = ""
+
+    answer, reasoning = split_thinking_blocks(raw_out)
 
     mv_score = math_verify_score(answer, gold_answer)
-    return {"answer": answer, "math-verify": mv_score}
+
+    return {"answer": answer, "reasoning": reasoning, "math-verify": mv_score}
 
 
 def run_experiments_for_task(

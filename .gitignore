@@ -3,8 +3,11 @@
 data/raw/*
 data/tasks/*.jsonl
 data/results/*
+data/analysis/*
 data/images/*.pdf
 data/images/*/
+data/images/*
+data/tasks/*.jsonl
 .cache/*
 .old/*
 logs/*

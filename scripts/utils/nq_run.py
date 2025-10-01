@@ -3,13 +3,15 @@ from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
 from scripts.utils.metrics import best_subspan_em
-from scripts.utils.utils import count_tokens_tiktoken, load_jsonl, print_
+from scripts.utils.utils import count_tokens_tiktoken, load_jsonl, print_, split_thinking_blocks
+
 
 def load_tasks(path: Path) -> List[Dict[str, Any]]:
     """
     Load a JSONL file containing tasks.
     """
     return load_jsonl(path)
+
 
 def _resolve_snippet_bounds(paragraph: str, answer: str, start: int, end: int) -> Tuple[int, int]:
     """
@@ -22,6 +24,7 @@ def _resolve_snippet_bounds(paragraph: str, answer: str, start: int, end: int) -
         return 0, min(len(paragraph), len(answer))
     return start, end
 
+
 def _extract_sentence(paragraph: str, start: int, end: int, delims: str = ".!?") -> str:
     """
     Extract the sentence containing the answer span.
@@ -31,6 +34,7 @@ def _extract_sentence(paragraph: str, start: int, end: int, delims: str = ".!?")
     right_positions = [pos for pos in (paragraph.find(d, end) for d in delims) if pos != -1]
     right = (min(right_positions) + 1) if right_positions else len(paragraph)
     return paragraph[left:right].strip()
+
 
 def get_gold_ctxs_varying_size(task: Dict[str, Any]) -> Tuple[Dict[str, str], Dict[str, int]]:
     """
@@ -63,6 +67,7 @@ def get_gold_ctxs_varying_size(task: Dict[str, Any]) -> Tuple[Dict[str, str], Di
     metas = {f"{k}_tokens": count_tokens_tiktoken(v) for k, v in variants.items()}
     return variants, metas
 
+
 def get_distractor_ctxs(task: Dict[str, Any], distractor_sizes: List[int]) -> Tuple[List[Dict[str, Any]], Dict[str, int]]:
     """
     Return distractor contexts and token counts for different sizes.
@@ -74,6 +79,7 @@ def get_distractor_ctxs(task: Dict[str, Any], distractor_sizes: List[int]) -> Tu
         metas[f"distractor_{k}_tokens"] = sum(count_tokens_tiktoken(txt) for txt in texts)
     return ctxs, metas
 
+
 def format_docs(docs: List[Dict[str, Any]]) -> str:
     """
     Format a list of documents as concatenated strings.
@@ -81,6 +87,7 @@ def format_docs(docs: List[Dict[str, Any]]) -> str:
     return "\n\n".join(
         f"Title: {d.get('title', '')}\nDocument: {d.get('text', '')}" for d in docs
     )
+
 
 def format_prompt(question: str, docs: List[str]) -> str:
     """
@@ -93,6 +100,7 @@ def format_prompt(question: str, docs: List[str]) -> str:
     prompt_lines = [f"Question: {question}", "Documents:"] + docs
     return prefix + "\n".join(prompt_lines)
 
+
 def format_prompt_noctx(question: str) -> str:
     """
     Format a prompt without any context.
@@ -103,6 +111,7 @@ def format_prompt_noctx(question: str) -> str:
         f"Question: {question}."
     )
 
+
 def aggregate(question: str, docs: List[str], gold_answers: List[str], llm: Any, gen_config: Dict[str, Any]) -> Dict[str, Any]:
     """
     Run LLM inference and compute subspan EM.
@@ -111,17 +120,21 @@ def aggregate(question: str, docs: List[str], gold_answers: List[str], llm: Any,
 
     for attempt in range(3):
         try:
-            answer = llm.generate(prompt, gen_config)
+            raw_out = llm.generate(prompt, gen_config)
             break
         except Exception as e:
             print(f"API call failed (attempt {attempt + 1}): {e}")
             time.sleep((attempt + 1) * 3)
     else:
         print("LLM.generate failed 3 times")
-        answer = ""
+        raw_out = ""
+
+    answer, reasoning = split_thinking_blocks(raw_out)
 
     subEM = best_subspan_em(answer, gold_answers)
-    return {"answer": answer, "subEM": subEM}
+    
+    return {"answer": answer, "reasoning": reasoning, "subEM": subEM}
+
 
 def run_experiments_for_task(
     task: Dict[str, Any], task_id: int, llm: Any, gen_config: Any,

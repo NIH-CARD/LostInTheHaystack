@@ -1,6 +1,7 @@
 import argparse
 import gzip
 from pathlib import Path
+import importlib
 
 import yaml
 
@@ -9,9 +10,9 @@ from scripts.utils.utils import append_result, load_completed_task_ids, merge_di
 
 # Benchmark name -> runner module
 BENCHMARK_DISPATCH = {
-    "cbb": scripts.utils.cbb_run,
-    "nq": scripts.utils.nq_run,
-    "nm": scripts.utils.nm_run,
+    "cbb": "scripts.utils.cbb_run",
+    "nq": "scripts.utils.nq_run",
+    "nm": "scripts.utils.nm_run",
 }
 
 def main():
@@ -68,7 +69,8 @@ def main():
         )
 
     # Load tasks and previously completed task IDs
-    utils = BENCHMARK_DISPATCH[bm]
+    module_path = BENCHMARK_DISPATCH[bm]
+    utils = importlib.import_module(module_path)
     task_path = Path(cfg["tasks"]["path"])
 
     # If unzipped task file does not exist, unzip the .gz file
@@ -89,8 +91,8 @@ def main():
 
     # Main experiment loop
     for task_id, task in enumerate(tasks):
-        # if task_id in completed or task_id >= max_tasks:
-        #     continue
+        if task_id in completed or task_id >= max_tasks:
+            continue
 
         if bm == "cbb":
             result = utils.run_experiments_for_task(
@@ -104,9 +106,8 @@ def main():
                 distractor_sizes, depths
             )
 
-        # append_result(result, Path(cfg["output"]["path"]))
+        append_result(result, Path(cfg["output"]["path"]))
         print_(f"Task {task_id} complete.")
-        break
     print_("Benchmark Runner Done", fun="[*]")
 
 if __name__ == "__main__":

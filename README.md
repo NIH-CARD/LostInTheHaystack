@@ -70,6 +70,8 @@ Analysis can be performed at two levels:
 
   ```bash
   python -m scripts.analyze --bench-config configs/benchmarks/cbb.yaml
+  python -m scripts.analyze --bench-config configs/benchmarks/nm.yaml
+  python -m scripts.analyze --bench-config configs/benchmarks/nq.yaml
   ```
 
 * **Model-specific experiment analysis**:

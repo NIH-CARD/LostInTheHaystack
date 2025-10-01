@@ -43,6 +43,7 @@ class AzureOAIGenerationConfig(BaseGenerationConfig):
     _AZURE_MODEL_MAP: ClassVar[dict[str, str]] = {
         "gpt-4o": "card-ai-gpt-4o20241212",
         "gpt-4o-mini": "card-ai-gpt-4o-turbo20250114",
+        "o3-mini": "card-ai-gpt-o3-mini20250410",
     }
     provider: str = "azureoai"
     model: str
@@ -60,10 +61,14 @@ class AzureOAIGenerationConfig(BaseGenerationConfig):
         Returns a dict to be passed to the (Async)AzureOpenAI.chat.completions.create() method.
         """
         gen_cfg = {
-            "max_tokens": self.max_tokens,
-            "temperature": self.temperature,
             "tools": self.tools
         }
+        if self.model == "o3-mini":
+            gen_cfg["max_completion_tokens"] = self.max_tokens
+        else:
+            gen_cfg["temperature"] = self.temperature
+            gen_cfg["max_tokens"] = self.max_tokens
+
         return gen_cfg
     
     def get_azure_model(self) -> str:

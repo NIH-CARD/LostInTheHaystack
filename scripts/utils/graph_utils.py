@@ -80,7 +80,7 @@ def plot_heatmap(
         fmt="",
         cmap="YlOrRd_r",
         vmin=vmin, vmax=vmax,
-        annot_kws={"fontsize": SM_FT},
+        annot_kws={"fontsize": SM_FT+1},
         cbar_kws={"label": metric_label, "pad": 0.025},
         linewidths=0.5,
         linecolor="white",
@@ -392,13 +392,13 @@ def plot_bar(
         capsize=5,
         color=bar_colors,
         width=0.8,
-        rot=30,
+        rot=45,
         legend=False
     )
 
     ax.set_xlim(-0.5, len(df) - 0.5)
     ax.set_ylabel(metric_label, fontsize=SM_FT)
-    ax.tick_params(axis="both", labelsize=SM_FT)
+    ax.tick_params(axis="both", labelsize=SM_FT-1)
 
     # Custom legend
     size_labels = {"sm_g": "small", "md_g": "medium", "lg_g": "large"}
