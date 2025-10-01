@@ -1,4 +1,4 @@
-# Lost in the Haystack: Smaller Needles are More Difficult for LLMs to Find
+# Hidden in the Haystack: Smaller Needles are More Difficult for LLMs to Find
 
 <div align="center">
   <img src="data/images/main_fig.png" alt="Figure 1" width="600"/>
